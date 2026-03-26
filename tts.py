@@ -1,7 +1,6 @@
 import io
 import logging
 import os
-import tempfile
 from pathlib import Path
 
 import requests
@@ -13,7 +12,7 @@ ELEVENLABS_API_BASE = "https://api.elevenlabs.io/v1"
 
 
 def _tts_segment(text: str, voice_id: str, model: str, output_format: str, api_key: str) -> bytes:
-    url = f"{ELEVENLABS_API_BASE}/text-to-speech/{voice_id}"
+    url = f"{ELEVENLABS_API_BASE}/text-to-speech/{voice_id}?output_format={output_format}"
     headers = {
         "xi-api-key": api_key,
         "Content-Type": "application/json",
@@ -49,12 +48,7 @@ def generate_audio(script: dict, config: dict, output_path: Path) -> Path:
         logger.info("TTS segment %d/%d [Host %s]: %s...", i + 1, len(script["segments"]), host, text[:50])
 
         audio_bytes = _tts_segment(text, voice_id, model, output_format, api_key)
-
-        with tempfile.NamedTemporaryFile(suffix=".mp3", delete=False) as tmp:
-            tmp.write(audio_bytes)
-            tmp_path = tmp.name
-
-        chunk = AudioSegment.from_mp3(tmp_path)
+        chunk = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
         combined = combined + chunk + pause
 
     output_path = Path(output_path)
@@ -66,8 +60,6 @@ def generate_audio(script: dict, config: dict, output_path: Path) -> Path:
 
 if __name__ == "__main__":
     import yaml
-    import json
-    import sys
     logging.basicConfig(level=logging.INFO)
     with open("config.yaml") as f:
         config = yaml.safe_load(f)

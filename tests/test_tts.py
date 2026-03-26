@@ -35,7 +35,7 @@ def test_calls_elevenlabs_for_each_segment(tmp_path):
     mock_audio.export = MagicMock()
 
     with patch("tts.requests.post", return_value=mock_response) as mock_post, \
-         patch("tts.AudioSegment.from_mp3", return_value=mock_audio), \
+         patch("tts.AudioSegment.from_file", return_value=mock_audio), \
          patch("tts.AudioSegment.silent", return_value=mock_audio), \
          patch.dict("os.environ", {"ELEVENLABS_API_KEY": "test_key"}):
         generate_audio(MOCK_SCRIPT, MOCK_CONFIG, tmp_path / "episode.mp3")
@@ -53,7 +53,7 @@ def test_uses_correct_voice_per_host(tmp_path):
     mock_audio.export = MagicMock()
 
     with patch("tts.requests.post", return_value=mock_response) as mock_post, \
-         patch("tts.AudioSegment.from_mp3", return_value=mock_audio), \
+         patch("tts.AudioSegment.from_file", return_value=mock_audio), \
          patch("tts.AudioSegment.silent", return_value=mock_audio), \
          patch.dict("os.environ", {"ELEVENLABS_API_KEY": "test_key"}):
         generate_audio(MOCK_SCRIPT, MOCK_CONFIG, tmp_path / "episode.mp3")
@@ -74,3 +74,22 @@ def test_raises_on_elevenlabs_error(tmp_path):
          patch.dict("os.environ", {"ELEVENLABS_API_KEY": "test_key"}):
         with pytest.raises(RuntimeError, match="ElevenLabs API error"):
             generate_audio(MOCK_SCRIPT, MOCK_CONFIG, tmp_path / "episode.mp3")
+
+
+def test_uses_output_format_in_url(tmp_path):
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.content = b"ID3fake_mp3_bytes"
+
+    mock_audio = MagicMock()
+    mock_audio.__add__ = MagicMock(return_value=mock_audio)
+    mock_audio.export = MagicMock()
+
+    with patch("tts.requests.post", return_value=mock_response) as mock_post, \
+         patch("tts.AudioSegment.from_file", return_value=mock_audio), \
+         patch("tts.AudioSegment.silent", return_value=mock_audio), \
+         patch.dict("os.environ", {"ELEVENLABS_API_KEY": "test_key"}):
+        generate_audio(MOCK_SCRIPT, MOCK_CONFIG, tmp_path / "episode.mp3")
+
+    url_called = mock_post.call_args_list[0][0][0]
+    assert "mp3_44100_128" in url_called
