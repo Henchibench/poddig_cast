@@ -18,7 +18,6 @@ ET.register_namespace("content", "http://purl.org/rss/1.0/modules/content/")
 
 def update_feed_xml(feed_path: Path, title: str, mp3_url: str, mp3_size: int, date_str: str) -> None:
     """Insert a new <item> at the top of the RSS feed's <channel>."""
-    ET.register_namespace("itunes", "http://www.itunes.com/dtds/podcast-1.0.dtd")
     tree = ET.parse(feed_path)
     root = tree.getroot()
     channel = root.find("channel")
@@ -58,6 +57,7 @@ def _upload_asset(upload_url: str, mp3_path: Path, token: str) -> str:
     # Strip the {?name,label} template from upload_url
     upload_url = re.sub(r"\{.*\}", "", upload_url)
     filename = mp3_path.name
+    file_size = mp3_path.stat().st_size
     with open(mp3_path, "rb") as f:
         resp = requests.post(
             f"{upload_url}?name={filename}",
@@ -65,6 +65,7 @@ def _upload_asset(upload_url: str, mp3_path: Path, token: str) -> str:
             headers={
                 "Authorization": f"token {token}",
                 "Content-Type": "audio/mpeg",
+                "Content-Length": str(file_size),
             },
         )
     resp.raise_for_status()
@@ -86,15 +87,15 @@ def publish_episode(mp3_path: Path, script: dict, config: dict) -> str:
     release = _create_release(owner, repo, tag, token)
     upload_url = release["upload_url"]
 
+    mp3_size = mp3_path.stat().st_size
     logger.info("Uploading MP3 asset")
     mp3_url = _upload_asset(upload_url, mp3_path, token)
 
-    mp3_size = mp3_path.stat().st_size
-    update_feed_xml(FEED_PATH, script["title"], mp3_url, mp3_size, date_str)
+    update_feed_xml(FEED_PATH, script.get("title", f"Poddig Cast - {date_slug}"), mp3_url, mp3_size, date_str)
 
     logger.info("Committing and pushing feed.xml")
-    subprocess.run(["git", "config", "user.email", "github-actions[bot]@users.noreply.github.com"], check=True)
-    subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
+    subprocess.run(["git", "config", "--local", "user.email", "github-actions[bot]@users.noreply.github.com"], check=True)
+    subprocess.run(["git", "config", "--local", "user.name", "github-actions[bot]"], check=True)
     subprocess.run(["git", "add", str(FEED_PATH)], check=True)
     subprocess.run(["git", "commit", "-m", f"episode: {tag}"], check=True)
     subprocess.run(["git", "push"], check=True)

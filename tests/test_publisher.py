@@ -1,7 +1,7 @@
 import os
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, MagicMock
 from publisher import publish_episode, update_feed_xml
 
 
@@ -76,10 +76,11 @@ def test_publish_episode_creates_release(tmp_path):
     feed_path = tmp_path / "feed.xml"
     feed_path.write_text(INITIAL_FEED, encoding="utf-8")
 
-    with patch("publisher.requests.post", side_effect=[mock_release_response, mock_asset_response]), \
-         patch("publisher.subprocess.run"), \
+    with patch("publisher.requests.post", side_effect=[mock_release_response, mock_asset_response]) as mock_post, \
+         patch("publisher.subprocess.run") as mock_sub, \
          patch("publisher.FEED_PATH", feed_path), \
          patch.dict(os.environ, {"GITHUB_TOKEN": "fake_token"}):
         mp3_url = publish_episode(mp3_path, MOCK_SCRIPT, MOCK_CONFIG)
 
     assert "ep-2026-03-26" in mp3_url
+    mock_sub.assert_any_call(["git", "push"], check=True)
