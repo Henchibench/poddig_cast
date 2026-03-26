@@ -1,0 +1,60 @@
+import json
+import pytest
+from unittest.mock import patch, MagicMock
+from scriptwriter import write_script
+
+
+MOCK_CONFIG = {
+    "episode": {"language": "sv", "target_duration_minutes": 10},
+    "voices": {"host_a": "voice_a_id", "host_b": "voice_b_id"},
+}
+
+MOCK_ARTICLES = [
+    {"title": "Tech nyhet", "summary": "AI gör grejer", "link": "https://example.com/1", "published": "Thu, 26 Mar 2026", "topics": ["tech"]},
+    {"title": "Ukraine nyhet", "summary": "Strid pågår", "link": "https://example.com/2", "published": "Thu, 26 Mar 2026", "topics": ["ukraine"]},
+]
+
+VALID_SCRIPT = {
+    "title": "Poddig Cast - 26 mars 2026",
+    "segments": [
+        {"host": "A", "text": "Hallå och välkommen!"},
+        {"host": "B", "text": "Hej hej!"},
+        {"host": "A", "text": "Idag pratar vi om AI."},
+    ],
+}
+
+
+def _make_mock_client(script_dict):
+    mock_message = MagicMock()
+    mock_message.content = [MagicMock(text=json.dumps(script_dict))]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_message
+    return mock_client
+
+
+def test_returns_script_with_title_and_segments():
+    mock_client = _make_mock_client(VALID_SCRIPT)
+    with patch("scriptwriter.anthropic.Anthropic", return_value=mock_client):
+        script = write_script(MOCK_ARTICLES, MOCK_CONFIG)
+    assert "title" in script
+    assert "segments" in script
+
+
+def test_segments_have_host_and_text():
+    mock_client = _make_mock_client(VALID_SCRIPT)
+    with patch("scriptwriter.anthropic.Anthropic", return_value=mock_client):
+        script = write_script(MOCK_ARTICLES, MOCK_CONFIG)
+    for seg in script["segments"]:
+        assert seg["host"] in ("A", "B")
+        assert isinstance(seg["text"], str)
+        assert len(seg["text"]) > 0
+
+
+def test_raises_on_invalid_json():
+    mock_message = MagicMock()
+    mock_message.content = [MagicMock(text="not json at all")]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_message
+    with patch("scriptwriter.anthropic.Anthropic", return_value=mock_client):
+        with pytest.raises(ValueError, match="Claude returned invalid JSON"):
+            write_script(MOCK_ARTICLES, MOCK_CONFIG)
