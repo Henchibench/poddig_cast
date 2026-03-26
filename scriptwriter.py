@@ -5,7 +5,7 @@ import anthropic
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """Du är manusförfattare för en svensk nyhetspodcast kallad "Poddig Cast".
-Du skriver manus för två programledare: HOST_A (kallas "A") och HOST_B (kallas "B").
+Du skriver manus för två programledare: HOST_A (kallas "Greger") och HOST_B (kallas "Berra").
 Deras ton är vänlig, avslappnad och lättsam — som två vänner som diskuterar nyheter.
 De kommenterar, reagerar genuint, och håller samtalet levande och naturligt.
 Varje segment ska vara 1-3 meningar max — håll det konversationsnära.
