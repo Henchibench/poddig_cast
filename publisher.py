@@ -60,20 +60,23 @@ def _create_release(owner: str, repo: str, tag: str, token: str) -> dict:
     return resp.json()
 
 
-def _upload_asset(upload_url: str, mp3_path: Path, token: str) -> str:
-    # Strip the {?name,label} template from upload_url
-    upload_url = re.sub(r"\{.*\}", "", upload_url)
+def _upload_asset(release: dict, mp3_path: Path, token: str) -> str:
     filename = mp3_path.name
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
+
+    # Return existing asset URL if already uploaded
+    for asset in release.get("assets", []):
+        if asset["name"] == filename:
+            logger.warning("Asset %s already exists, reusing", filename)
+            return asset["browser_download_url"]
+
+    upload_url = re.sub(r"\{.*\}", "", release["upload_url"])
     file_size = mp3_path.stat().st_size
     with open(mp3_path, "rb") as f:
         resp = requests.post(
             f"{upload_url}?name={filename}",
             data=f,
-            headers={
-                "Authorization": f"token {token}",
-                "Content-Type": "audio/mpeg",
-                "Content-Length": str(file_size),
-            },
+            headers={**headers, "Content-Type": "audio/mpeg", "Content-Length": str(file_size)},
         )
     resp.raise_for_status()
     return resp.json()["browser_download_url"]
@@ -92,11 +95,10 @@ def publish_episode(mp3_path: Path, script: dict, config: dict) -> str:
 
     logger.info("Creating GitHub Release %s", tag)
     release = _create_release(owner, repo, tag, token)
-    upload_url = release["upload_url"]
 
     mp3_size = mp3_path.stat().st_size
     logger.info("Uploading MP3 asset")
-    mp3_url = _upload_asset(upload_url, mp3_path, token)
+    mp3_url = _upload_asset(release, mp3_path, token)
 
     update_feed_xml(FEED_PATH, script.get("title", f"Poddig Cast - {date_slug}"), mp3_url, mp3_size, date_str)
 
