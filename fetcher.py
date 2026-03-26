@@ -2,6 +2,7 @@ import logging
 import feedparser
 
 logger = logging.getLogger(__name__)
+ENTRIES_PER_FEED = 3  # Articles taken from each feed before overall max_stories cap
 
 
 def fetch_articles(config: dict) -> list[dict]:
@@ -21,7 +22,7 @@ def fetch_articles(config: dict) -> list[dict]:
             continue
 
         successful_feeds += 1
-        for entry in feed.entries[:3]:
+        for entry in feed.entries[:ENTRIES_PER_FEED]:
             all_articles.append({
                 "title": getattr(entry, "title", ""),
                 "summary": getattr(entry, "summary", ""),

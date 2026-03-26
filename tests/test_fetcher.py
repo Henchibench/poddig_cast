@@ -1,3 +1,4 @@
+import logging
 import pytest
 from unittest.mock import patch, MagicMock
 from fetcher import fetch_articles
@@ -32,7 +33,7 @@ def test_returns_top_n_articles():
     entry = _make_entry("Tech news", "Summary", "https://example.com/1", "Thu, 26 Mar 2026 07:00:00 +0000")
     with patch("fetcher.feedparser.parse", return_value=_make_feed([entry, entry, entry])):
         articles = fetch_articles(MOCK_CONFIG)
-    assert len(articles) <= MOCK_CONFIG["episode"]["max_stories"]
+    assert len(articles) == MOCK_CONFIG["episode"]["max_stories"]
 
 
 def test_article_has_required_fields():
@@ -41,10 +42,11 @@ def test_article_has_required_fields():
         articles = fetch_articles(MOCK_CONFIG)
     assert len(articles) > 0
     article = articles[0]
-    assert "title" in article
-    assert "summary" in article
-    assert "link" in article
-    assert "topics" in article
+    assert article["title"] == "Tech news"
+    assert article["summary"] == "Summary"
+    assert article["link"] == "https://example.com/1"
+    assert article["published"] == "Thu, 26 Mar 2026 07:00:00 +0000"
+    assert article["topics"] == ["tech"]
 
 
 def test_failed_feed_is_skipped(caplog):
@@ -56,10 +58,14 @@ def test_failed_feed_is_skipped(caplog):
     good_feed = _make_feed([good_entry])
 
     with patch("fetcher.feedparser.parse", side_effect=[bad_feed, good_feed]):
-        articles = fetch_articles(MOCK_CONFIG)
+        with caplog.at_level(logging.WARNING, logger="fetcher"):
+            articles = fetch_articles(MOCK_CONFIG)
 
     assert len(articles) >= 1
-    assert any("Skipping feed" in r.message for r in caplog.records)
+    assert any(
+        "Skipping feed" in r.message and r.levelname == "WARNING"
+        for r in caplog.records
+    )
 
 
 def test_all_feeds_failing_raises():
