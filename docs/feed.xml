@@ -4,7 +4,7 @@
   xmlns:content="http://purl.org/rss/1.0/modules/content/">
   <channel>
     <title>Poddig Cast</title>
-    <link>https://YOUR_GITHUB_USERNAME.github.io/poddig_cast/</link>
+    <link>https://henchibench.github.io/poddig_cast/</link>
     <description>Din automatiska svenska nyhetspodcast</description>
     <language>sv</language>
     <itunes:author>Poddig Cast</itunes:author>
@@ -12,7 +12,7 @@
     <itunes:explicit>no</itunes:explicit>
     <itunes:owner>
       <itunes:name>Poddig Cast</itunes:name>
-      <itunes:email>YOUR_EMAIL</itunes:email>
+      <itunes:email>henrik.soderstrom@outlook.com</itunes:email>
     </itunes:owner>
   </channel>
 </rss>
