@@ -43,12 +43,19 @@ def update_feed_xml(feed_path: Path, title: str, mp3_url: str, mp3_size: int, da
 
 
 def _create_release(owner: str, repo: str, tag: str, token: str) -> dict:
-    url = f"https://api.github.com/repos/{owner}/{repo}/releases"
+    headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
     resp = requests.post(
-        url,
+        f"https://api.github.com/repos/{owner}/{repo}/releases",
         json={"tag_name": tag, "name": tag, "draft": False, "prerelease": False},
-        headers={"Authorization": f"token {token}", "Accept": "application/vnd.github+json"},
+        headers=headers,
     )
+    if resp.status_code == 422:
+        # Release already exists — fetch it
+        logger.warning("Release %s already exists, fetching existing release", tag)
+        resp = requests.get(
+            f"https://api.github.com/repos/{owner}/{repo}/releases/tags/{tag}",
+            headers=headers,
+        )
     resp.raise_for_status()
     return resp.json()
 
