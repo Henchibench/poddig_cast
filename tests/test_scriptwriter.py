@@ -58,3 +58,15 @@ def test_raises_on_invalid_json():
     with patch("scriptwriter.anthropic.Anthropic", return_value=mock_client):
         with pytest.raises(ValueError, match="Claude returned invalid JSON"):
             write_script(MOCK_ARTICLES, MOCK_CONFIG)
+
+
+def test_strips_markdown_code_fences():
+    fenced = "```json\n" + json.dumps(VALID_SCRIPT) + "\n```"
+    mock_message = MagicMock()
+    mock_message.content = [MagicMock(text=fenced)]
+    mock_client = MagicMock()
+    mock_client.messages.create.return_value = mock_message
+    with patch("scriptwriter.anthropic.Anthropic", return_value=mock_client):
+        script = write_script(MOCK_ARTICLES, MOCK_CONFIG)
+    assert script["title"] == VALID_SCRIPT["title"]
+    assert len(script["segments"]) == len(VALID_SCRIPT["segments"])

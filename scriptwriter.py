@@ -26,12 +26,15 @@ avsluta naturligt. Inga reklampausreferenser."""
 
 def write_script(articles: list[dict], config: dict) -> dict:
     """Send articles to Claude, return script as dict with title and segments."""
+    # config accepted for interface consistency with other stages; model and
+    # prompt values are hardcoded since they are not user-configurable.
     client = anthropic.Anthropic()
 
     articles_text = "\n\n".join(
         f"[{', '.join(a['topics'])}] {a['title']}\n{a['summary']}"
         for a in articles
     )
+    logger.info("Calling Claude API with %d articles", len(articles))
 
     user_prompt = f"Skriv ett ~10 minuters poddmanus baserat på dessa nyheter:\n\n{articles_text}"
 
@@ -53,12 +56,20 @@ def write_script(articles: list[dict], config: dict) -> dict:
     except json.JSONDecodeError as e:
         raise ValueError(f"Claude returned invalid JSON: {e}\n\nRaw output:\n{raw}")
 
+    # Validate structure
+    if not isinstance(script.get("title"), str) or not isinstance(script.get("segments"), list) or not script["segments"]:
+        raise ValueError(f"Claude returned JSON with invalid structure (expected title + non-empty segments): {script}")
+    for seg in script["segments"]:
+        if seg.get("host") not in ("A", "B") or not isinstance(seg.get("text"), str):
+            raise ValueError(f"Claude returned segment with invalid structure: {seg}")
+
+    logger.info("Script generated: '%s' (%d segments)", script.get("title", ""), len(script.get("segments", [])))
+
     return script
 
 
 if __name__ == "__main__":
     import yaml
-    import sys
     logging.basicConfig(level=logging.INFO)
     with open("config.yaml") as f:
         config = yaml.safe_load(f)
