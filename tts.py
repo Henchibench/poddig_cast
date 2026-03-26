@@ -28,6 +28,9 @@ def _tts_segment(text: str, voice_id: str, model: str, output_format: str, api_k
     return response.content
 
 
+REACTION_OVERLAP_MS = 600  # how far from end of current cursor to start a reaction
+
+
 def generate_audio(script: dict, config: dict, output_path: Path) -> Path:
     """Generate merged MP3 from script segments using ElevenLabs v3."""
     api_key = os.environ["ELEVENLABS_API_KEY"]
@@ -37,19 +40,41 @@ def generate_audio(script: dict, config: dict, output_path: Path) -> Path:
     }
     model = config["tts"]["model"]
     output_format = config["tts"]["output_format"]
-    pause = AudioSegment.silent(duration=300)
-    combined = AudioSegment.silent(duration=0)
+    pause_ms = 150
 
+    # Generate all audio chunks first
+    chunks = []
     for i, segment in enumerate(script["segments"]):
         host = segment["host"]
         text = segment["text"]
         voice_id = voice_map[host]
+        is_reaction = segment.get("reaction", False)
 
-        logger.info("TTS segment %d/%d [Host %s]: %s...", i + 1, len(script["segments"]), host, text[:50])
+        logger.info("TTS segment %d/%d [Host %s%s]: %s...", i + 1, len(script["segments"]), host, " reaction" if is_reaction else "", text[:50])
 
         audio_bytes = _tts_segment(text, voice_id, model, output_format, api_key)
         chunk = AudioSegment.from_file(io.BytesIO(audio_bytes), format="mp3")
-        combined = combined + chunk + pause
+        chunks.append((segment, chunk))
+
+    # Build timeline: reactions overlay the tail of the previous main segment
+    placements = []  # list of (start_ms, chunk)
+    cursor = 0  # end of last non-reaction segment in ms
+
+    for segment, chunk in chunks:
+        is_reaction = segment.get("reaction", False)
+        if is_reaction:
+            start = max(0, cursor - REACTION_OVERLAP_MS)
+            placements.append((start, chunk))
+        else:
+            faded = chunk.fade_in(10).fade_out(10)
+            placements.append((cursor, faded))
+            cursor += len(faded) + pause_ms
+
+    # Mix all placements into a single track
+    total_length = max(start + len(c) for start, c in placements)
+    combined = AudioSegment.silent(duration=total_length)
+    for start_ms, chunk in placements:
+        combined = combined.overlay(chunk, position=start_ms)
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

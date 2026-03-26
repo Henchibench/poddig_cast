@@ -9,6 +9,13 @@ Du skriver manus för två programledare: HOST_A (kallas "Greger") och HOST_B (k
 Deras ton är vänlig, avslappnad och lättsam — som två vänner som diskuterar nyheter.
 De kommenterar, reagerar genuint, och håller samtalet levande och naturligt.
 Varje segment ska vara 1-3 meningar max — håll det konversationsnära.
+
+Inkludera korta reaktionssegment där den lyssnande hosten reagerar naturligt, t.ex. "Mhm.",
+"Ja, precis.", "Verkligen?", "Wow.", "Oj.", "Exakt.", "Hmm."
+Markera dessa med "reaction": true — de kommer att spelas SAMTIDIGT som den andra hosten
+pratar (överlappande ljud), precis som i ett riktigt samtal. Placer dem direkt efter det
+segment de ska reagera på.
+
 Använd SSML-taggar för naturliga pauser och betoning inuti text-strängen:
   <break time='300ms'/> för paus, <emphasis>ord</emphasis> för betoning,
   <prosody rate='fast'>text</prosody> när en host pratar snabbt/ivrigt.
@@ -17,11 +24,12 @@ Returnera ALLTID ett JSON-objekt med denna EXAKTA struktur, inget annat:
   "title": "Poddig Cast - [datum på svenska]",
   "segments": [
     {"host": "A", "text": "..."},
-    {"host": "B", "text": "..."}
+    {"host": "B", "text": "Mhm.", "reaction": true},
+    {"host": "A", "text": "..."}
   ]
 }
-Målet är 25-35 segment (~10 minuter). Börja med en kort intro, ta upp 5-7 nyheter,
-avsluta naturligt. Inga reklampausreferenser."""
+Målet är 35-50 segment (~10 minuter, fler segment tack vare korta reaktioner).
+Börja med en kort intro, ta upp 5-7 nyheter, avsluta naturligt. Inga reklampausreferenser."""
 
 
 def write_script(articles: list[dict], config: dict) -> dict:
@@ -62,6 +70,8 @@ def write_script(articles: list[dict], config: dict) -> dict:
     for seg in script["segments"]:
         if seg.get("host") not in ("A", "B") or not isinstance(seg.get("text"), str):
             raise ValueError(f"Claude returned segment with invalid structure: {seg}")
+        if "reaction" in seg and not isinstance(seg["reaction"], bool):
+            raise ValueError(f"Claude returned segment with invalid 'reaction' field: {seg}")
 
     logger.info("Script generated: '%s' (%d segments)", script.get("title", ""), len(script.get("segments", [])))
 
