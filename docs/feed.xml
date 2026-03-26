@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Poddig Cast</title>
+    <link>https://YOUR_GITHUB_USERNAME.github.io/poddig_cast/</link>
+    <description>Din automatiska svenska nyhetspodcast</description>
+    <language>sv</language>
+    <itunes:author>Poddig Cast</itunes:author>
+    <itunes:category text="News"/>
+    <itunes:explicit>false</itunes:explicit>
+  </channel>
+</rss>

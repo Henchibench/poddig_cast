@@ -1,0 +1,27 @@
+voices:
+  host_a: "6eknYWL7D5Z4nRkDy15t"
+  host_b: "7UMEOkIJdI4hjmR2SWNq"
+
+tts:
+  model: "eleven_v3"
+  output_format: "mp3_44100_128"
+
+feeds:
+  - url: "https://feeds.reuters.com/reuters/topNews"
+    topics: [world, politics]
+  - url: "https://kyivindependent.com/feed/"
+    topics: [ukraine]
+  - url: "https://techcrunch.com/feed/"
+    topics: [tech]
+  - url: "https://www.svt.se/nyheter/rss.xml"
+    topics: [sweden, world]
+
+episode:
+  target_duration_minutes: 10
+  max_stories: 7
+  language: "sv"
+
+github:
+  owner: "YOUR_GITHUB_USERNAME"
+  repo: "poddig_cast"
+  pages_branch: "main"
