@@ -12,15 +12,15 @@ def test_main_calls_all_stages(tmp_path):
     mock_mp3.write_bytes(b"fake")
     mock_config = {"episode": {}, "voices": {}, "tts": {}, "github": {}}
 
-    with patch("fetcher.fetch_articles", return_value=mock_articles) as mock_fetch, \
-         patch("scriptwriter.write_script", return_value=mock_script) as mock_write, \
-         patch("tts.generate_audio", return_value=mock_mp3) as mock_tts, \
-         patch("publisher.publish_episode", return_value="https://example.com/ep.mp3") as mock_pub, \
-         patch("builtins.open", unittest.mock.mock_open(read_data=b"")), \
-         patch("yaml.safe_load", return_value=mock_config):
-        # Remove cached run module if it exists
-        if "run" in sys.modules:
-            del sys.modules["run"]
+    # Remove run from sys.modules to allow fresh reload
+    sys.modules.pop("run", None)
+
+    with patch("builtins.open", unittest.mock.mock_open(read_data=b"")), \
+         patch("run.yaml.safe_load", return_value=mock_config), \
+         patch("run.fetch_articles", return_value=mock_articles) as mock_fetch, \
+         patch("run.write_script", return_value=mock_script) as mock_write, \
+         patch("run.generate_audio", return_value=mock_mp3) as mock_tts, \
+         patch("run.publish_episode", return_value="https://example.com/ep.mp3") as mock_pub:
         import run
         run.main()
 
