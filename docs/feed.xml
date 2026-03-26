@@ -9,6 +9,10 @@
     <language>sv</language>
     <itunes:author>Poddig Cast</itunes:author>
     <itunes:category text="News"/>
-    <itunes:explicit>false</itunes:explicit>
+    <itunes:explicit>no</itunes:explicit>
+    <itunes:owner>
+      <itunes:name>Poddig Cast</itunes:name>
+      <itunes:email>YOUR_EMAIL</itunes:email>
+    </itunes:owner>
   </channel>
 </rss>
