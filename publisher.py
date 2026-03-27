@@ -64,11 +64,15 @@ def _upload_asset(release: dict, mp3_path: Path, token: str) -> str:
     filename = mp3_path.name
     headers = {"Authorization": f"token {token}", "Accept": "application/vnd.github+json"}
 
-    # Return existing asset URL if already uploaded
+    # Delete existing asset with same name so we can upload fresh audio
     for asset in release.get("assets", []):
         if asset["name"] == filename:
-            logger.warning("Asset %s already exists, reusing", filename)
-            return asset["browser_download_url"]
+            logger.warning("Asset %s already exists, deleting before re-upload", filename)
+            del_resp = requests.delete(
+                asset["url"],
+                headers=headers,
+            )
+            del_resp.raise_for_status()
 
     upload_url = re.sub(r"\{.*\}", "", release["upload_url"])
     file_size = mp3_path.stat().st_size

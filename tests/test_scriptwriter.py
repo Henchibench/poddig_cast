@@ -70,3 +70,47 @@ def test_strips_markdown_code_fences():
         script = write_script(MOCK_ARTICLES, MOCK_CONFIG)
     assert script["title"] == VALID_SCRIPT["title"]
     assert len(script["segments"]) == len(VALID_SCRIPT["segments"])
+
+
+def test_strips_ssml_tags():
+    script_with_ssml = {
+        "title": "Poddig Cast - 26 mars 2026",
+        "segments": [
+            {"host": "A", "text": "Hallå <break time='300ms'/> och välkommen!"},
+            {"host": "B", "text": "Det var <emphasis>helt sjukt</emphasis>."},
+            {"host": "A", "text": "<prosody rate='fast'>Snabbt snabbt</prosody> ja."},
+        ],
+    }
+    mock_client = _make_mock_client(script_with_ssml)
+    with patch("scriptwriter.anthropic.Anthropic", return_value=mock_client):
+        script = write_script(MOCK_ARTICLES, MOCK_CONFIG)
+    assert script["segments"][0]["text"] == "Hallå  och välkommen!"
+    assert script["segments"][1]["text"] == "Det var helt sjukt."
+    assert script["segments"][2]["text"] == "Snabbt snabbt ja."
+
+
+def test_accepts_valid_pause_hint():
+    script_with_hints = {
+        "title": "Poddig Cast - 26 mars 2026",
+        "segments": [
+            {"host": "A", "text": "Hej!", "pause_hint": "long"},
+            {"host": "B", "text": "Hej!", "pause_hint": "short"},
+        ],
+    }
+    mock_client = _make_mock_client(script_with_hints)
+    with patch("scriptwriter.anthropic.Anthropic", return_value=mock_client):
+        script = write_script(MOCK_ARTICLES, MOCK_CONFIG)
+    assert script["segments"][0]["pause_hint"] == "long"
+
+
+def test_raises_on_invalid_pause_hint():
+    script_bad_hint = {
+        "title": "Poddig Cast - 26 mars 2026",
+        "segments": [
+            {"host": "A", "text": "Hej!", "pause_hint": "superlong"},
+        ],
+    }
+    mock_client = _make_mock_client(script_bad_hint)
+    with patch("scriptwriter.anthropic.Anthropic", return_value=mock_client):
+        with pytest.raises(ValueError, match="pause_hint"):
+            write_script(MOCK_ARTICLES, MOCK_CONFIG)

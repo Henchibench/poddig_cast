@@ -1,6 +1,12 @@
 voices:
-  host_a: "6eknYWL7D5Z4nRkDy15t"
-  host_b: "7UMEOkIJdI4hjmR2SWNq"
+  host_a:
+    voice_id: "6eknYWL7D5Z4nRkDy15t"
+    stability: 0.40
+    similarity_boost: 0.70
+  host_b:
+    voice_id: "7UMEOkIJdI4hjmR2SWNq"
+    stability: 0.35
+    similarity_boost: 0.65
 
 tts:
   model: "eleven_v3"
