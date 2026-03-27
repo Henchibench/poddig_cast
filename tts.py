@@ -31,10 +31,6 @@ def _tts_segment(text: str, voice_id: str, model: str, output_format: str, api_k
         "model_id": model,
         "voice_settings": {"stability": stability, "similarity_boost": similarity_boost},
     }
-    if previous_text:
-        payload["previous_text"] = previous_text
-    if next_text:
-        payload["next_text"] = next_text
     response = requests.post(url, json=payload, headers=headers)
     if response.status_code != 200:
         raise RuntimeError(f"ElevenLabs API error {response.status_code}: {response.text}")
