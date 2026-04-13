@@ -1,8 +1,6 @@
 name: Generate Podcast Episode
 
 on:
-  schedule:
-    - cron: '0 7 * * 3,6'  # Wed and Sat at 07:00 UTC
   workflow_dispatch:         # Manual trigger button in GitHub UI
 
 jobs:
